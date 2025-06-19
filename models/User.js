@@ -36,14 +36,86 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Phone number is required"],
       trim: true,
+      match: [/^\+?[\d\s\-\(\)]+$/, "Please enter a valid phone number"],
     },
     userType: {
       type: String,
-      enum: {
-        values: ["donor", "receiver", "volunteer", "admin"],
-        message: "User type must be donor, receiver, volunteer, or admin",
-      },
+      enum: ["donor", "receiver", "admin"],
       required: [true, "User type is required"],
+      default: "donor",
+    },
+    address: {
+      street: {
+        type: String,
+        required: [true, "Street address is required"],
+        trim: true,
+      },
+      city: {
+        type: String,
+        required: [true, "City is required"],
+        trim: true,
+      },
+      state: {
+        type: String,
+        required: [true, "State is required"],
+        trim: true,
+      },
+      zipCode: {
+        type: String,
+        required: [true, "Zip code is required"],
+        trim: true,
+      },
+      country: {
+        type: String,
+        default: "India",
+        trim: true,
+      },
+      coordinates: {
+        type: [Number],
+        index: "2dsphere",
+      },
+    },
+    profileImage: {
+      type: String,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    organizationName: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Organization name cannot exceed 100 characters"],
+    },
+    organizationType: {
+      type: String,
+      enum: ["ngo", "charity", "food_bank", "community_center", "other"],
+    },
+    registrationNumber: {
+      type: String,
+      trim: true,
+    },
+    website: {
+      type: String,
+      trim: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: function () {
+        return this.userType === "receiver" ? "pending" : "approved";
+      },
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    approvalDate: {
+      type: Date,
     },
 
     // Organization/Business details (for donors and receivers)
@@ -176,6 +248,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+
     // For password reset
     resetPasswordToken: String,
     resetPasswordExpire: Date,
@@ -184,12 +257,14 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
       default: Date.now,
+
     },
   },
   {
     timestamps: true,
   },
 );
+
 
 // Virtual for full name
 userSchema.virtual("fullName").get(function () {
@@ -201,7 +276,7 @@ userSchema.virtual("displayName").get(function () {
   return this.organizationName || this.fullName;
 });
 
-// Pre-save middleware to hash password
+
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     next();
@@ -214,6 +289,7 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
 
 // Method to update rating
 userSchema.methods.updateRating = function (newRating) {
@@ -232,5 +308,6 @@ userSchema.index({ averageRating: -1 });
 // Ensure virtual fields are included in JSON output
 userSchema.set("toJSON", { virtuals: true });
 userSchema.set("toObject", { virtuals: true });
+
 
 module.exports = mongoose.model("User", userSchema);

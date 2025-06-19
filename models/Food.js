@@ -11,7 +11,7 @@ const foodSchema = new mongoose.Schema(
     description: {
       type: String,
       required: [true, "Description is required"],
-      maxlength: [500, "Description cannot exceed 500 characters"],
+      maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
     category: {
       type: String,
@@ -38,6 +38,7 @@ const foodSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "Donor is required"],
     },
+
     location: {
       address: {
         type: String,
@@ -65,16 +66,20 @@ const foodSchema = new mongoose.Schema(
         trim: true,
       },
     },
+
     expiryDate: {
       type: Date,
       required: [true, "Expiry date is required"],
       validate: {
+
         validator: function (value) {
           return value > new Date();
+
         },
         message: "Expiry date must be in the future",
       },
     },
+
     images: [
       {
         url: {
@@ -89,9 +94,17 @@ const foodSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     status: {
       type: String,
-      enum: ["available", "reserved", "picked_up", "expired", "cancelled"],
+      enum: [
+        "available",
+        "reserved",
+        "picked_up",
+        "expired",
+        "cancelled",
+        "pending_approval",
+      ],
       default: "available",
     },
     dietaryInfo: {
@@ -126,6 +139,7 @@ const foodSchema = new mongoose.Schema(
       max: 5,
     },
     totalRatings: {
+
       type: Number,
       default: 0,
     },
@@ -134,6 +148,7 @@ const foodSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
 
 // Indexes
 foodSchema.index({ donor: 1 });
@@ -194,5 +209,6 @@ foodSchema.methods.calculateDistance = function (lat, lng) {
 // Ensure virtual fields are included in JSON output
 foodSchema.set("toJSON", { virtuals: true });
 foodSchema.set("toObject", { virtuals: true });
+
 
 module.exports = mongoose.model("Food", foodSchema);
