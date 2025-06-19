@@ -1,0 +1,18 @@
+meta {
+  name: register
+  type: http
+  seq: 2
+}
+
+post {
+  url: POST /api/foods/6853972517ca1745dcabf57d/request
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "quantityRequested": "2kg",
+    "message": "We can pick this up tomorrow afternoon."
+  }
+}

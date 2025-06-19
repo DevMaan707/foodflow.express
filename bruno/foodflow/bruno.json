@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "foodflow",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
