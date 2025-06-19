@@ -13,87 +13,88 @@ const foodSchema = new mongoose.Schema(
       required: [true, "Description is required"],
       maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
+    category: {
+      type: String,
+      required: [true, "Category is required"],
+      enum: [
+        "vegetables",
+        "bakery",
+        "cooked",
+        "canned",
+        "dairy",
+        "grains",
+        "other",
+      ],
+      default: "other",
+    },
+    quantity: {
+      type: String,
+      required: [true, "Quantity is required"],
+      trim: true,
+      // e.g., "10kg", "20 items", "5 servings"
+    },
     donor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Donor is required"],
     },
-    category: {
-      type: String,
-      enum: [
-        "cooked_food",
-        "raw_ingredients",
-        "packaged_food",
-        "dairy",
-        "bakery",
-        "fruits_vegetables",
-        "grains_cereals",
-        "other",
-      ],
-      required: [true, "Food category is required"],
-    },
-    foodType: {
-      type: String,
-      enum: ["vegetarian", "non_vegetarian", "vegan"],
-      required: [true, "Food type is required"],
-    },
-    quantity: {
-      value: {
-        type: Number,
-        required: [true, "Quantity value is required"],
-        min: [1, "Quantity must be at least 1"],
-      },
-      unit: {
+
+    location: {
+      address: {
         type: String,
-        enum: ["kg", "grams", "liters", "pieces", "plates", "packets", "boxes"],
-        required: [true, "Quantity unit is required"],
+        required: [true, "Address is required"],
+        trim: true,
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: [true, "Coordinates are required"],
+        index: "2dsphere",
+      },
+      city: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      state: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      zipCode: {
+        type: String,
+        required: true,
+        trim: true,
       },
     },
-    price: {
-      type: Number,
-      default: 0.0,
-      min: [0, "Price cannot be negative"],
-    },
-    priceType: {
-      type: String,
-      enum: ["free", "discounted"],
-      default: "free",
-    },
+
     expiryDate: {
       type: Date,
       required: [true, "Expiry date is required"],
       validate: {
-        validator: function (date) {
-          return date > new Date();
+
+        validator: function (value) {
+          return value > new Date();
+
         },
         message: "Expiry date must be in the future",
-      },
-    },
-    availableFrom: {
-      type: Date,
-      default: Date.now,
-    },
-    availableUntil: {
-      type: Date,
-      required: [true, "Available until date is required"],
-    },
-    pickupLocation: {
-      address: {
-        type: String,
-        required: [true, "Pickup address is required"],
-      },
-      coordinates: {
-        type: [Number],
-        required: [true, "Pickup coordinates are required"],
-        index: "2dsphere",
       },
     },
 
     images: [
       {
-        type: String,
+        url: {
+          type: String,
+          required: true,
+        },
+        publicId: String, // for cloudinary
+        alt: String,
       },
     ],
+    verified: {
+      type: Boolean,
+      default: false,
+    },
+
     status: {
       type: String,
       enum: [
@@ -106,41 +107,39 @@ const foodSchema = new mongoose.Schema(
       ],
       default: "available",
     },
-    maxRequests: {
-      type: Number,
-      default: 1,
-      min: [1, "Maximum requests must be at least 1"],
+    dietaryInfo: {
+      isVegetarian: { type: Boolean, default: false },
+      isVegan: { type: Boolean, default: false },
+      isHalal: { type: Boolean, default: false },
+      isKosher: { type: Boolean, default: false },
+      allergens: [String], // e.g., ["nuts", "dairy", "gluten"]
     },
-    currentRequests: {
+    pickupInstructions: {
+      type: String,
+      maxlength: [300, "Pickup instructions cannot exceed 300 characters"],
+    },
+    availableFrom: {
+      type: Date,
+      default: Date.now,
+    },
+    availableUntil: {
+      type: Date,
+      required: true,
+    },
+    // For tracking requests
+    totalRequests: {
       type: Number,
       default: 0,
     },
-    specialInstructions: {
-      type: String,
-      maxlength: [500, "Special instructions cannot exceed 500 characters"],
-    },
-    allergenInfo: [
-      {
-        type: String,
-        enum: ["nuts", "dairy", "gluten", "eggs", "soy", "shellfish", "other"],
-      },
-    ],
-    isApproved: {
-      type: Boolean,
-      default: true,
-    },
-    approvedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    rejectionReason: {
-      type: String,
-    },
-    viewCount: {
+    // For ratings
+    averageRating: {
       type: Number,
       default: 0,
+      min: 0,
+      max: 5,
     },
-    requestCount: {
+    totalRatings: {
+
       type: Number,
       default: 0,
     },
@@ -149,15 +148,67 @@ const foodSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+
+// Indexes
 foodSchema.index({ donor: 1 });
 foodSchema.index({ status: 1 });
 foodSchema.index({ category: 1 });
-foodSchema.index({ foodType: 1 });
-foodSchema.index({ expiryDate: 1 });
-foodSchema.index({ "pickupLocation.coordinates": "2dsphere" });
+foodSchema.index({ "location.coordinates": "2dsphere" });
 foodSchema.index({ createdAt: -1 });
-foodSchema.index({ price: 1 });
-foodSchema.index({ status: 1, expiryDate: 1 });
-foodSchema.index({ category: 1, status: 1 });
+foodSchema.index({ expiryDate: 1 });
+
+// Virtual for time remaining
+foodSchema.virtual("timeRemaining").get(function () {
+  const now = new Date();
+  const expiry = new Date(this.expiryDate);
+  const diffTime = expiry - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Expired";
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "1 day";
+  if (diffDays < 7) return `${diffDays} days`;
+  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks`;
+  return `${Math.ceil(diffDays / 30)} months`;
+});
+
+// Virtual for posted time
+foodSchema.virtual("postedTime").get(function () {
+  const now = new Date();
+  const posted = new Date(this.createdAt);
+  const diffTime = now - posted;
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffDays === 1) return "1 day ago";
+  return `${diffDays} days ago`;
+});
+
+// Method to calculate distance from given coordinates
+foodSchema.methods.calculateDistance = function (lat, lng) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat - this.location.coordinates[1]) * Math.PI) / 180;
+  const dLng = ((lng - this.location.coordinates[0]) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((this.location.coordinates[1] * Math.PI) / 180) *
+      Math.cos((lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+
+  if (distance < 1) return `${Math.round(distance * 1000)}m`;
+  return `${distance.toFixed(1)}km`;
+};
+
+// Ensure virtual fields are included in JSON output
+foodSchema.set("toJSON", { virtuals: true });
+foodSchema.set("toObject", { virtuals: true });
+
 
 module.exports = mongoose.model("Food", foodSchema);

@@ -1,0 +1,678 @@
+{
+  "info": {
+    "name": "FoodRequest Smoke Test Collection",
+    "description": "Comprehensive smoke testing for FoodRequest model creation, validation, and querying",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "donorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "receiverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "foodId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "foodRequestId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Setup - Create Test Donor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Donor created successfully\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('user');",
+              "    pm.collectionVariables.set('donorId', responseJson.user._id);",
+              "    console.log('Donor ID set:', responseJson.user._id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Donor\",\n  \"email\": \"test-donor-{{$timestamp}}@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"1234567890\",\n  \"userType\": \"donor\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup - Create Test Receiver",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Receiver created successfully\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('user');",
+              "    pm.collectionVariables.set('receiverId', responseJson.user._id);",
+              "    console.log('Receiver ID set:', responseJson.user._id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Receiver\",\n  \"email\": \"test-receiver-{{$timestamp}}@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"0987654321\",\n  \"userType\": \"receiver\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup - Login as Donor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Donor login successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('token');",
+              "    pm.collectionVariables.set('authToken', responseJson.token);",
+              "    console.log('Auth token set for donor');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test-donor-{{$timestamp}}@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup - Create Test Food",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Food created successfully\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('_id');",
+              "    pm.collectionVariables.set('foodId', responseJson._id);",
+              "    console.log('Food ID set:', responseJson._id);",
+              "    ",
+              "    // Verify default status",
+              "    pm.expect(responseJson.status).to.eql('available');",
+              "    ",
+              "    // Verify timestamps",
+              "    pm.expect(responseJson).to.have.property('createdAt');",
+              "    pm.expect(responseJson).to.have.property('updatedAt');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Food Item for Smoke Test\",\n  \"description\": \"A delicious test food item created for FoodRequest smoke testing purposes\",\n  \"donor\": \"{{donorId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/foods",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "foods"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 1 - Create FoodRequest",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"FoodRequest created successfully\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('_id');",
+              "    pm.collectionVariables.set('foodRequestId', responseJson._id);",
+              "    console.log('FoodRequest ID set:', responseJson._id);",
+              "});",
+              "",
+              "pm.test(\"Default status is 'pending'\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.status).to.eql('pending');",
+              "    console.log('✅ Default status verified: pending');",
+              "});",
+              "",
+              "pm.test(\"Default isActive is true\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.isActive).to.eql(true);",
+              "    console.log('✅ Default isActive verified: true');",
+              "});",
+              "",
+              "pm.test(\"Timestamps are automatically set\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('createdAt');",
+              "    pm.expect(responseJson).to.have.property('updatedAt');",
+              "    console.log('✅ Timestamps verified - createdAt:', responseJson.createdAt, 'updatedAt:', responseJson.updatedAt);",
+              "});",
+              "",
+              "pm.test(\"Required references are properly set\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.food).to.eql(pm.collectionVariables.get('foodId'));",
+              "    pm.expect(responseJson.requester).to.eql(pm.collectionVariables.get('receiverId'));",
+              "    pm.expect(responseJson.donor).to.eql(pm.collectionVariables.get('donorId'));",
+              "    console.log('✅ References verified');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"food\": \"{{foodId}}\",\n  \"requester\": \"{{receiverId}}\",\n  \"donor\": \"{{donorId}}\",\n  \"requestedQuantity\": \"2 servings\",\n  \"message\": \"Hello, I would like to request this food item for my family. Thank you for your generosity!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/food-requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 2 - Query by Requester (Index Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Query by requester successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.be.an('array');",
+              "    pm.expect(responseJson.length).to.be.greaterThan(0);",
+              "    console.log('✅ Requester index query successful - found', responseJson.length, 'request(s)');",
+              "});",
+              "",
+              "pm.test(\"Response time is reasonable (index performance)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+              "    console.log('✅ Query response time:', pm.response.responseTime, 'ms');",
+              "});",
+              "",
+              "pm.test(\"Returned request matches created request\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    const foundRequest = responseJson.find(req => req._id === pm.collectionVariables.get('foodRequestId'));",
+              "    pm.expect(foundRequest).to.not.be.undefined;",
+              "    pm.expect(foundRequest.requester).to.eql(pm.collectionVariables.get('receiverId'));",
+              "    console.log('✅ Created request found in query results');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests?requester={{receiverId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ],
+          "query": [
+            {
+              "key": "requester",
+              "value": "{{receiverId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 3 - Query by Status (Index Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Query by status successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.be.an('array');",
+              "    console.log('✅ Status index query successful - found', responseJson.length, 'pending request(s)');",
+              "});",
+              "",
+              "pm.test(\"All returned requests have pending status\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    responseJson.forEach(request => {",
+              "        pm.expect(request.status).to.eql('pending');",
+              "    });",
+              "    console.log('✅ All returned requests have pending status');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests?status=pending",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "pending"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 4 - Query by Donor (Index Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Query by donor successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.be.an('array');",
+              "    console.log('✅ Donor index query successful - found', responseJson.length, 'request(s)');",
+              "});",
+              "",
+              "pm.test(\"All returned requests belong to correct donor\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    responseJson.forEach(request => {",
+              "        pm.expect(request.donor).to.eql(pm.collectionVariables.get('donorId'));",
+              "    });",
+              "    console.log('✅ All returned requests belong to correct donor');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests?donor={{donorId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ],
+          "query": [
+            {
+              "key": "donor",
+              "value": "{{donorId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 5 - Query by Food (Index Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Query by food successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.be.an('array');",
+              "    console.log('✅ Food index query successful - found', responseJson.length, 'request(s)');",
+              "});",
+              "",
+              "pm.test(\"All returned requests reference correct food\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    responseJson.forEach(request => {",
+              "        pm.expect(request.food).to.eql(pm.collectionVariables.get('foodId'));",
+              "    });",
+              "    console.log('✅ All returned requests reference correct food');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests?food={{foodId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ],
+          "query": [
+            {
+              "key": "food",
+              "value": "{{foodId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 6 - Get Single FoodRequest with Population",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Single FoodRequest retrieved successfully\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson._id).to.eql(pm.collectionVariables.get('foodRequestId'));",
+              "    console.log('✅ Single FoodRequest retrieved');",
+              "});",
+              "",
+              "pm.test(\"Population working correctly\", function () {",
+              "    const responseJson = pm.response.json();",
+              "    ",
+              "    // Check if food is populated",
+              "    if (typeof responseJson.food === 'object' && responseJson.food.title) {",
+              "        pm.expect(responseJson.food).to.have.property('title');",
+              "        console.log('✅ Food populated:', responseJson.food.title);",
+              "    }",
+              "    ",
+              "    // Check if requester is populated",
+              "    if (typeof responseJson.requester === 'object' && responseJson.requester.firstName) {",
+              "        pm.expect(responseJson.requester).to.have.property('firstName');",
+              "        console.log('✅ Requester populated:', responseJson.requester.firstName, responseJson.requester.lastName);",
+              "    }",
+              "    ",
+              "    // Check if donor is populated",
+              "    if (typeof responseJson.donor === 'object' && responseJson.donor.firstName) {",
+              "        pm.expect(responseJson.donor).to.have.property('firstName');",
+              "        console.log('✅ Donor populated:', responseJson.donor.firstName, responseJson.donor.lastName);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests/{{foodRequestId}}?populate=food,requester,donor",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests",
+            "{{foodRequestId}}"
+          ],
+          "query": [
+            {
+              "key": "populate",
+              "value": "food,requester,donor"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test 7 - Duplicate Prevention Test",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Duplicate prevention working\", function () {",
+              "    // Should return 400 or 409 for duplicate",
+              "    pm.expect([400, 409, 422]).to.include(pm.response.code);",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.message || responseJson.error).to.include('already have an active request');",
+              "    console.log('✅ Duplicate prevention working correctly');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"food\": \"{{foodId}}\",\n  \"requester\": \"{{receiverId}}\",\n  \"donor\": \"{{donorId}}\",\n  \"requestedQuantity\": \"1 serving\",\n  \"message\": \"This should fail due to duplicate prevention!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/food-requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cleanup - Delete Test FoodRequest",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Test FoodRequest deleted successfully\", function () {",
+              "    pm.expect([200, 204]).to.include(pm.response.code);",
+              "    console.log('✅ Test FoodRequest cleaned up');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/food-requests/{{foodRequestId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "food-requests",
+            "{{foodRequestId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cleanup - Delete Test Food",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Test Food deleted successfully\", function () {",
+              "    pm.expect([200, 204]).to.include(pm.response.code);",
+              "    console.log('✅ Test Food cleaned up');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/foods/{{foodId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "foods",
+            "{{foodId}}"
+          ]
+        }
+      }
+    }
+  ]
+}
+
