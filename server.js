@@ -28,7 +28,7 @@ app.use("/api/foods", require("./routes/foods"));
 app.use("/api/bookings", require("./routes/bookings"));
 app.use("/api/health", require("./routes/health"));
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 6069;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
