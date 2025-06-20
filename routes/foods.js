@@ -261,7 +261,7 @@ router.post(
 
       const request = new FoodRequest({
         food: foodId,
-        // requester: req.user.id, // Uncomment when auth is implemented
+        requester: "6853975b17ca1745dcabf57e", // Uncomment when auth is implemented
         donor: food.donor,
         quantityRequested,
         message,
